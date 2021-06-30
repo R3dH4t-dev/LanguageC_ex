@@ -1,0 +1,16 @@
+for i in $(seq 1 10) ; do
+    _d="/mnt/$(printf "%03d" ${i})"
+    mkdir -vp "${_d}"
+    touch "${_d}/.dont_use.lock"
+    chattr +i "${_d}/.dont_use.lock"
+done
+i=0
+blkid | sort | \
+    while read line ; do
+        echo "${line}" | grep -q -E '^/dev/sda|^/dev/mapper' && continue
+        i=$(( i + 1 ))
+        echo "${line}" | awk -F: '{print "# "$1}'
+        echo "${line}" | awk -F: '{print $2}' > /tmp/blkid.inc
+        . /tmp/blkid.inc
+        echo "UUID=${UUID} /mnt/$(printf "%03d" ${i}) ${TYPE} defaults,noatime,lazytime 1 2"
+    done
